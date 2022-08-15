@@ -17,41 +17,70 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-#define FECHADURA 13
+#define FECHADURA 12
+#define BOTAO 23
 
 const char *SSID = "Familia2016";
 const char *PWD = "09091967";
+
+bool statusFechadura = true;
+//0- sem uso 1- botao pressionado 
+int flagControle = 0;
+
 // const char *SSID = "Nicolas";
 // const char *PWD = "12345678";
 WebServer server(80);
  
 char buffer[250];
 
-void setHigh() {
-  digitalWrite(FECHADURA, HIGH);
+void setAbrir() {
+  statusFechadura = LOW;
+  digitalWrite(FECHADURA, statusFechadura);
   server.send(200, "application/json", buffer);
 }
  
-void setLow() {
-  digitalWrite(FECHADURA, LOW);
+void setFechar() {
+  statusFechadura = HIGH;
+  digitalWrite(FECHADURA, statusFechadura);
   server.send(200, "application/json", buffer);
 }
 
-void setup_routing() {     
-  server.on("/abrir", setHigh);     
+void setup_routing() {
+
+  server.on("/abrir", setAbrir);     
      
-  server.on("/fechar", setLow);       
+  server.on("/fechar", setFechar);       
           
   server.begin();    
+
 }
+
+
 
 IPAddress ip(192,168,1,16); //COLOQUE UMA FAIXA DE IP DISPONÍVEL DO SEU ROTEADOR. EX: 192.168.1.110 **** ISSO VARIA, NO MEU CASO É: 192.168.0.175
 IPAddress gateway(192,168,1,1); //GATEWAY DE CONEXÃO (ALTERE PARA O GATEWAY DO SEU ROTEADOR)
 IPAddress subnet(255,255,255,0);
 
+void verificar(){  
+  
+  bool botao;  
+  botao = digitalRead(BOTAO);
+
+  if(!botao){
+    flagControle = 1;
+  }else {
+    if (flagControle == 1){
+      statusFechadura = !statusFechadura;
+      digitalWrite(FECHADURA, statusFechadura);
+      flagControle = 0;
+    }
+  }
+}
+
 void setup() {    
 
   pinMode(FECHADURA,OUTPUT);
+  pinMode(BOTAO, INPUT_PULLUP);
 
   Serial.begin(115200);
          
@@ -72,4 +101,5 @@ void setup() {
        
 void loop() {    
   server.handleClient();     
+  verificar();
 }
